@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>AirNoiseMonitor - Giám sát Không khí &amp; Tiếng ồn</title>
+  <meta name="description"
+    content="Dashboard IoT giám sát nhiệt độ, độ ẩm, chất lượng không khí và tiếng ồn theo thời gian thực.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="page-shell">
+
+    <!-- Thanh điều hướng -->
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="brand" href="#overview" aria-label="AirNoiseMonitor">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path
+                d="M14 29a10 10 0 0 1 2.1-19.8A13 13 0 0 1 40 16.5 8.5 8.5 0 0 1 38.5 33H15.5A7.5 7.5 0 0 1 14 29Z" />
+              <path d="M15 38h5M24 38h9M11 43h13M29 43h8" />
+            </svg>
+          </span>
+          <span>
+            <strong>AirNoiseMonitor</strong>
+            <small>Urban sensing platform</small>
+          </span>
+        </a>
+
+        <nav class="main-nav" aria-label="Điều hướng chính">
+          <a href="#overview">Tổng quan</a>
+          <a href="#extendedSensors">Cảm biến</a>
+          <a href="#charts">Biểu đồ</a>
+          <a href="#analytics">Phân tích</a>
+          <a href="#control">Điều khiển</a>
+          <a href="#events">Nhật ký</a>
+        </nav>
+
+        <div class="nav-actions">
+          <label class="station-select">
+            <span class="sr-only">Chọn trạm</span>
+            <select id="stationSelect" aria-label="Chọn trạm giám sát">
+              <option value="station-01">Trạm 01</option>
+            </select>
+          </label>
+
+          <div id="connectionStatus" class="connection-pill status status-unknown">
+            <span class="status-dot"></span>
+            <span>Đang kết nối...</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section class="hero" id="overview">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Giám sát môi trường đô thị theo thời gian thực</p>
+            <h1>Nhìn thấy chất lượng không khí trước khi nó trở thành vấn đề.</h1>
+            <p class="hero-lead">
+              Hệ thống IoT sử dụng ESP32 để theo dõi nhiệt độ, độ ẩm,
+              chất lượng không khí và tiếng ồn, đồng bộ dữ liệu lên Firebase
+              và hỗ trợ cảnh báo – điều khiển từ xa.
+            </p>
+
+            <div class="hero-actions">
+              <a class="button button-primary" href="#charts">Xem dữ liệu trực tiếp</a>
+              <a class="button button-secondary" href="#control">Điều khiển thiết bị</a>
+            </div>
+
+            <div class="system-meta">
+              <div>
+                <span class="meta-label">Thiết bị</span>
+                <strong id="deviceStatusText">Đang kiểm tra</strong>
+              </div>
+              <div>
+                <span class="meta-label">Cập nhật cuối</span>
+                <strong id="lastUpdated">--:--:--</strong>
+              </div>
+              <div>
+                <span class="meta-label">Chế độ</span>
+                <strong id="currentModeText">AUTO</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Minh họa luồng dữ liệu cảm biến">
+            <div class="visual-head">
+              <span>Live sensor stream</span>
+              <span class="live-chip"><i></i> Live</span>
+            </div>
+
+            <div class="sensor-map">
+              <div class="sensor-node node-temp">
+                <span class="sensor-code">DHT22</span>
+                <strong>Nhiệt độ</strong>
+                <small><span id="heroTempValue">--</span> °C</small>
+              </div>
+
+              <div class="sensor-node node-air">
+                <span class="sensor-code">MQ2 / GAS</span>
+                <strong>Không khí</strong>
+                <small><span id="heroAirValue">--</span> AQI*</small>
+              </div>
+
+              <div class="sensor-node node-noise">
+                <span class="sensor-code">NOISE</span>
+                <strong>Tiếng ồn</strong>
+                <small><span id="heroNoiseValue">--</span> dB*</small>
+              </div>
+
+              <div class="hub-node">
+                <span>ESP32</span>
+                <strong>Edge hub</strong>
+              </div>
+
+              <svg class="connector-lines" viewBox="0 0 600 360" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M120 100 C220 100, 230 170, 300 180" />
+                <path d="M480 95 C390 100, 390 165, 300 180" />
+                <path d="M475 270 C390 270, 390 205, 300 180" />
+                <path d="M300 180 C300 250, 300 265, 300 330" />
+              </svg>
+
+              <div class="cloud-node">
+                <span>Firebase</span>
+                <strong>Realtime Database</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cảnh báo hiện tại từ script cũ -->
+      <div class="container">
+        <div id="alertBanner" class="alert-banner hidden"></div>
+      </div>
+
+      <!-- Các chỉ số realtime -->
+      <section class="metrics-section">
+        <div class="container">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Realtime overview</p>
+              <h2>Trạng thái môi trường hiện tại</h2>
+            </div>
+
+            <div id="envStatusBadge" class="environment-badge environment-good">
+              <span class="status-dot"></span>
+              <span id="envStatusText">Đang phân tích</span>
+            </div>
+          </div>
+
+          <div class="cards metric-grid">
+            <section class="card metric-card" id="cardTemp">
+              <div class="metric-top">
+                <span class="metric-icon">°</span>
+                <span class="metric-source">DHT22</span>
+              </div>
+              <h3>Nhiệt độ</h3>
+              <p class="value"><span id="tempValue">--</span><span class="unit">°C</span></p>
+              <div class="metric-footer">
+                <span id="tempLevel">Đang nhận dữ liệu</span>
+                <span class="trend neutral">Realtime</span>
+              </div>
+            </section>
+
+            <section class="card metric-card" id="cardHumidity">
+              <div class="metric-top">
+                <span class="metric-icon">%</span>
+                <span class="metric-source">DHT22</span>
+              </div>
+              <h3>Độ ẩm</h3>
+              <p class="value"><span id="humidityValue">--</span><span class="unit">%</span></p>
+              <div class="metric-footer">
+                <span id="humidityLevel">Đang nhận dữ liệu</span>
+                <span class="trend neutral">Realtime</span>
+              </div>
+            </section>
+
+            <section class="card metric-card" id="cardAir">
+              <div class="metric-top">
+                <span class="metric-icon">A</span>
+                <span class="metric-source">MQ2 / Gas</span>
+              </div>
+              <h3>Chỉ số không khí</h3>
+              <p class="value"><span id="airValue">--</span><span class="unit">AQI*</span></p>
+              <div class="metric-footer">
+                <span id="airLevel">Đang nhận dữ liệu</span>
+                <span class="trend neutral">Tương đối</span>
+              </div>
+            </section>
+
+            <section class="card metric-card" id="cardNoise">
+              <div class="metric-top">
+                <span class="metric-icon">dB</span>
+                <span class="metric-source">Noise analog</span>
+              </div>
+              <h3>Độ ồn</h3>
+              <p class="value"><span id="noiseValue">--</span><span class="unit">dB*</span></p>
+              <div class="metric-footer">
+                <span id="noiseLevel">Đang nhận dữ liệu</span>
+                <span class="trend neutral">Tương đối</span>
+              </div>
+            </section>
+          </div>
+
+          <p class="disclaimer">
+            <strong>Lưu ý:</strong> Chỉ số không khí và độ ồn là giá trị tương đối suy ra từ điện áp analog
+            của cảm biến gas và noise analog, chưa hiệu chuẩn theo AQI/EPA hoặc dB(SPL) thực tế.
+            Phù hợp cho demo và đồ án học phần, không dùng cho đo lường chính thức.
+          </p>
+        </div>
+      </section>
+
+
+      <!-- Cảm biến và hạ tầng mở rộng -->
+      <section class="extended-section" id="extendedSensors">
+        <div class="container">
+          <div class="section-heading compact">
+            <div>
+              <p class="eyebrow">Extended hardware telemetry</p>
+              <h2>Cảm biến mở rộng và trạng thái thiết bị</h2>
+            </div>
+            <span id="firmwareBadge" class="integration-chip">Firmware --</span>
+          </div>
+
+          <div class="extended-grid">
+            <article class="card extended-card" id="cardPm25">
+              <div class="metric-top"><span class="metric-icon">PM</span><span class="metric-source">PM2.5</span></div>
+              <h3>Bụi mịn PM2.5</h3>
+              <p class="value compact-value"><span id="pm25Value">--</span><span class="unit">µg/m³</span></p>
+              <small id="pm10Value">PM10: -- µg/m³</small>
+            </article>
+
+            <article class="card extended-card" id="cardGas">
+              <div class="metric-top"><span class="metric-icon">G</span><span class="metric-source">MQ2 / Gas</span></div>
+              <h3>Nồng độ khí</h3>
+              <p class="value compact-value"><span id="gasValue">--</span><span class="unit">ppm*</span></p>
+              <small id="gasAqiValue">AQI tương đối: --</small>
+            </article>
+
+            <article class="card extended-card" id="cardPir">
+              <div class="metric-top"><span class="metric-icon">PIR</span><span class="metric-source">Chuyển động</span></div>
+              <h3>Phát hiện chuyển động</h3>
+              <p class="state-value" id="pirValue">Chưa có dữ liệu</p>
+              <small id="pirDescription">Cảm biến hồng ngoại thụ động</small>
+            </article>
+
+            <article class="card extended-card" id="cardMpu">
+              <div class="metric-top"><span class="metric-icon">6D</span><span class="metric-source">MPU6050</span></div>
+              <h3>Nghiêng và rung</h3>
+              <p class="value compact-value"><span id="tiltValue">--</span><span class="unit">°</span></p>
+              <small id="vibrationValue">Rung: -- m/s²</small>
+            </article>
+
+            <article class="card extended-card" id="cardSolar">
+              <div class="metric-top"><span class="metric-icon">☀</span><span class="metric-source">Solar</span></div>
+              <h3>Năng lượng mặt trời</h3>
+              <p class="value compact-value"><span id="solarValue">--</span><span class="unit">%</span></p>
+              <small id="solarDetail">-- V · -- W · -- lux</small>
+            </article>
+
+            <article class="card extended-card" id="cardRelay">
+              <div class="metric-top"><span class="metric-icon">R</span><span class="metric-source">Relay</span></div>
+              <h3>Quạt / tải chấp hành</h3>
+              <p class="state-value" id="relayValue">Chưa xác định</p>
+              <small>Tự động theo nhiệt độ, PM2.5 và gas</small>
+            </article>
+
+            <article class="card extended-card" id="cardMatrix">
+              <div class="metric-top"><span class="metric-icon">8×8</span><span class="metric-source">NeoPixel</span></div>
+              <h3>Ma trận trạng thái</h3>
+              <p class="state-value" id="matrixValue">Đang khởi tạo</p>
+              <small>Đỏ: cảnh báo · xanh dương: PIR · xanh lá: bình thường</small>
+            </article>
+
+            <article class="card extended-card" id="cardSystem">
+              <div class="metric-top"><span class="metric-icon">SYS</span><span class="metric-source">WiFi / OTA / BT</span></div>
+              <h3>Hạ tầng thiết bị</h3>
+              <p class="state-value" id="wifiDeviceValue">Chưa kết nối</p>
+              <div class="system-chip-row">
+                <span id="wifiRssiChip" class="mini-chip">RSSI --</span>
+                <span id="otaChip" class="mini-chip">OTA --</span>
+                <span id="bluetoothChip" class="mini-chip">BT --</span>
+              </div>
+            </article>
+          </div>
+
+          <p class="disclaimer">
+            PM2.5 dùng biến trở mô phỏng trong Wokwi và PMS5003 UART ở cấu hình ESP32 thật.
+            Solar dùng LDR để mô phỏng cường độ nắng; gas và noise vẫn là giá trị tương đối nếu chưa hiệu chuẩn thực tế.
+          </p>
+        </div>
+      </section>
+
+      <!-- Biểu đồ -->
+      <section class="charts-section" id="charts">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Historical data visualization</p>
+              <h2>Dữ liệu lịch sử theo thời gian</h2>
+            </div>
+            <div class="time-filter" aria-label="Khoảng thời gian">
+              <button class="filter-button active" type="button" data-range="realtime">Realtime</button>
+              <button class="filter-button" type="button" data-range="15m">15 phút</button>
+              <button class="filter-button" type="button" data-range="1h">1 giờ</button>
+              <button class="filter-button" type="button" data-range="24h">24 giờ</button>
+              <button class="filter-button" type="button" data-range="1d">1 ngày</button>
+              <button class="filter-button" type="button" data-range="1w">1 tuần</button>
+              <button class="filter-button" type="button" data-range="1m">1 tháng</button>
+            </div>
+          </div>
+
+          <div class="charts">
+            <article class="chart-box">
+              <div class="chart-head">
+                <div>
+                  <span class="chart-kicker">Khí hậu</span>
+                  <h3>Nhiệt độ &amp; độ ẩm</h3>
+                </div>
+                <span id="climateChartStatus" class="chart-status">Realtime</span>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="climateChart" aria-label="Biểu đồ đường nhiệt độ và độ ẩm"></canvas>
+              </div>
+            </article>
+
+            <article class="chart-box">
+              <div class="chart-head">
+                <div>
+                  <span class="chart-kicker">Môi trường</span>
+                  <h3>Chất lượng không khí &amp; độ ồn</h3>
+                </div>
+                <span id="envChartStatus" class="chart-status">Realtime</span>
+              </div>
+              <div class="canvas-wrap">
+                <canvas id="envChart" aria-label="Biểu đồ đường chất lượng không khí và độ ồn"></canvas>
+              </div>
+            </article>
+
+            <article class="chart-box chart-box-wide">
+              <div class="chart-head">
+                <div>
+                  <span class="chart-kicker">Phân bố chất lượng</span>
+                  <h3>Tỷ lệ mức môi trường trong khoảng đã chọn</h3>
+                </div>
+                <span id="qualityChartStatus" class="chart-status">Realtime</span>
+              </div>
+
+              <div class="quality-chart-layout">
+                <div class="canvas-wrap pie-canvas-wrap">
+                  <canvas id="qualityPieChart" aria-label="Biểu đồ tròn phân bố mức chất lượng môi trường"></canvas>
+                </div>
+                <div id="qualityPieLegend" class="pie-legend" aria-live="polite"></div>
+              </div>
+
+              <p id="chartRangeNote" class="chart-range-note">
+                Đang tải dữ liệu lịch sử từ Firebase...
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Phân tích -->
+      <section class="analytics-section" id="analytics">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Environmental data analytics</p>
+              <h2>Phân loại và thống kê dữ liệu</h2>
+            </div>
+            <button id="exportCsvButton" class="button button-secondary" type="button">
+              Xuất dữ liệu CSV
+            </button>
+          </div>
+
+          <p id="analyticsRangeText" class="analytics-source-note">
+            Thống kê đang lấy dữ liệu từ Firebase trong khoảng Realtime.
+            Dữ liệu lịch sử không bị mất khi tải lại trang.
+          </p>
+
+          <div class="analytics-grid">
+            <article class="status-panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="panel-label">Đánh giá tổng thể</span>
+                  <h3 id="overallStatusTitle">Đang phân tích môi trường</h3>
+                </div>
+                <span id="overallStatusCode" class="status-code">--</span>
+              </div>
+
+              <p id="overallStatusDescription" class="panel-description">
+                Hệ thống sẽ tự động phân loại mức độ môi trường thành Tốt, Trung bình,
+                Cảnh báo hoặc Nguy hiểm dựa trên dữ liệu cảm biến.
+              </p>
+
+              <div class="signal-list">
+                <div class="signal-row">
+                  <div>
+                    <span>Nhiệt độ</span>
+                    <strong id="tempSignalText">--</strong>
+                  </div>
+                  <div class="signal-track"><span id="tempSignalBar"></span></div>
+                  <div class="signal-scale">
+                    <small id="tempSignalPercent">--% ngưỡng cảnh báo</small>
+                    <small>Cảnh báo từ 35°C</small>
+                  </div>
+                </div>
+
+                <div class="signal-row">
+                  <div>
+                    <span>Độ ẩm</span>
+                    <strong id="humiditySignalText">--</strong>
+                  </div>
+
+                  <div class="signal-track">
+                    <span id="humiditySignalBar"></span>
+                  </div>
+
+                  <div class="signal-scale">
+                    <small id="humiditySignalPercent">--% độ ẩm</small>
+                    <small>Khoảng phù hợp 30% – 85%</small>
+                  </div>
+                </div>
+
+                <div class="signal-row">
+                  <div>
+                    <span>Chất lượng không khí</span>
+                    <strong id="airSignalText">--</strong>
+                  </div>
+                  <div class="signal-track"><span id="airSignalBar"></span></div>
+                  <div class="signal-scale">
+                    <small id="airSignalPercent">--% ngưỡng cảnh báo</small>
+                    <small>Cảnh báo từ 150 AQI*</small>
+                  </div>
+                </div>
+
+                <div class="signal-row">
+                  <div>
+                    <span>Độ ồn</span>
+                    <strong id="noiseSignalText">--</strong>
+                  </div>
+                  <div class="signal-track"><span id="noiseSignalBar"></span></div>
+                  <div class="signal-scale">
+                    <small id="noiseSignalPercent">--% ngưỡng cảnh báo</small>
+                    <small>Cảnh báo từ 70 dB*</small>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <div class="stats-grid">
+              <article class="stat-card">
+                <span id="sampleCountLabel" class="stat-label">Số mẫu trong Realtime</span>
+                <strong id="sampleCount">0</strong>
+                <small id="sampleCountDescription">Bản ghi lấy từ Firebase airnoise/history</small>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">Nhiệt độ trung bình</span>
+                <strong><span id="avgTemp">--</span><small>°C</small></strong>
+                <small id="avgTempDescription">Trung bình trong khoảng Realtime</small>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">AQI* cao nhất</span>
+                <strong id="maxAir">--</strong>
+                <small>Giá trị tương đối lớn nhất</small>
+              </article>
+
+              <article class="stat-card">
+                <span class="stat-label">Độ ồn cao nhất</span>
+                <strong><span id="maxNoise">--</span><small>dB*</small></strong>
+                <small>Giá trị tương đối lớn nhất</small>
+              </article>
+
+              <article class="stat-card wide">
+                <span class="stat-label">Số mẫu vượt ngưỡng</span>
+                <strong id="thresholdCount">0</strong>
+                <small id="thresholdCountDescription">Số bản ghi ở mức Cảnh báo hoặc Nguy hiểm trong khoảng đang
+                  chọn</small>
+              </article>
+
+              <article class="stat-card wide telegram-card">
+                <div>
+                  <span class="stat-label">Cảnh báo từ xa</span>
+                  <strong>Telegram</strong>
+                  <small>Đã cấu hình kết nối Bot API</small>
+                </div>
+                <span class="integration-chip">Active</span>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Điều khiển -->
+      <section class="control-section" id="control">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Actuator &amp; remote control</p>
+              <h2>Điều khiển thiết bị chấp hành</h2>
+            </div>
+            <div class="mode-switch" role="group" aria-label="Chọn chế độ điều khiển">
+              <button id="modeAuto" class="mode-button active" type="button">AUTO</button>
+              <button id="modeManual" class="mode-button" type="button">MANUAL</button>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <article class="control-card">
+              <div class="control-icon">FAN</div>
+              <div class="control-copy">
+                <span class="control-label">Quạt thông gió</span>
+                <strong id="fanStateText">Đang tắt</strong>
+                <small>Tự động bật khi nhiệt độ hoặc AQI* vượt ngưỡng.</small>
+              </div>
+              <button id="fanControl" class="device-toggle" type="button" aria-pressed="false">
+                <span></span>
+              </button>
+            </article>
+
+            <article class="control-card">
+              <div class="control-icon">LED</div>
+              <div class="control-copy">
+                <span class="control-label">Đèn cảnh báo</span>
+                <strong id="ledStateText">Đang tắt</strong>
+                <small>Hiển thị trực quan khi môi trường ở mức cảnh báo.</small>
+              </div>
+              <button id="ledControl" class="device-toggle" type="button" aria-pressed="false">
+                <span></span>
+              </button>
+            </article>
+
+            <article class="control-card">
+              <div class="control-icon">BZR</div>
+              <div class="control-copy">
+                <span class="control-label">Buzzer</span>
+                <strong id="buzzerStateText">Đang tắt</strong>
+                <small>Kích hoạt khi hệ thống xác định mức nguy hiểm.</small>
+              </div>
+              <button id="buzzerControl" class="device-toggle" type="button" aria-pressed="false">
+                <span></span>
+              </button>
+            </article>
+          </div>
+
+          <p class="control-note">
+            Các nút trên hiện điều khiển giao diện mô phỏng. Để điều khiển ESP32 thật,
+            cần ghi trạng thái thiết bị lên Firebase và cho ESP32 đọc nhánh điều khiển tương ứng.
+          </p>
+        </div>
+      </section>
+
+      <!-- Nhật ký -->
+      <section class="events-section" id="events">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Alert history / event log</p>
+              <h2>Nhật ký cảnh báo</h2>
+            </div>
+            <button id="clearLogButton" class="text-button" type="button">Xóa nhật ký</button>
+          </div>
+
+          <div class="event-table-wrap">
+            <table class="event-table">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Mức độ</th>
+                  <th>Sự kiện</th>
+                  <th>Giá trị</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="alertLogBody">
+                <tr class="empty-row">
+                  <td colspan="5">Chưa có cảnh báo nào trong phiên này.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <a class="brand footer-brand" href="#overview">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 48 48">
+                <path
+                  d="M14 29a10 10 0 0 1 2.1-19.8A13 13 0 0 1 40 16.5 8.5 8.5 0 0 1 38.5 33H15.5A7.5 7.5 0 0 1 14 29Z" />
+                <path d="M15 38h5M24 38h9M11 43h13M29 43h8" />
+              </svg>
+            </span>
+            <span>
+              <strong>AirNoiseMonitor</strong>
+              <small>IoT environmental monitoring</small>
+            </span>
+          </a>
+          <p>
+            Đồ án IoT sử dụng ESP32, DHT22, PIR, MPU6050, PM2.5, gas, noise, solar, NeoPixel, relay và Firebase Realtime Database.
+          </p>
+        </div>
+
+        <div class="footer-links">
+          <span class="footer-title">Hệ thống</span>
+          <a href="#overview">Tổng quan</a>
+          <a href="#charts">Biểu đồ</a>
+          <a href="#analytics">Phân tích</a>
+        </div>
+
+        <div class="footer-links">
+          <span class="footer-title">Điều khiển</span>
+          <a href="#control">Auto / Manual</a>
+          <a href="#events">Nhật ký cảnh báo</a>
+          <a href="#overview">Trạm 01</a>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <span>AirNoiseMonitor © 2026</span>
+        <span>Demo học phần — Không dùng cho đo lường chính thức</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Dashboard dùng Canvas API nội bộ, không phụ thuộc CDN Chart.js -->
+  <script src="script.js"></script>
+
+  <!-- Script bổ sung giao diện, thống kê, phân loại, log và điều khiển mô phỏng -->
+  <script src="ui-enhancements.js"></script>
+
+  <!-- Hiển thị dữ liệu của phần cứng mở rộng -->
+  <script src="extended-dashboard.js"></script>
+</body>
+
+</html>

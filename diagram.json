@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "author": "AirNoiseMonitor Full",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp32",
+      "top": 20,
+      "left": 10,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht22",
+      "top": -170,
+      "left": 250,
+      "attrs": { "temperature": "28", "humidity": "60" }
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": -190,
+      "left": -210,
+      "attrs": { "i2cAddress": "0x3c" }
+    },
+    {
+      "type": "wokwi-mpu6050",
+      "id": "mpu6050",
+      "top": -65,
+      "left": -225,
+      "attrs": { "accelX": "0", "accelY": "0", "accelZ": "1" }
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir",
+      "top": 100,
+      "left": -245,
+      "attrs": { "delayTime": "5", "inhibitTime": "1.2" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pm25_sim",
+      "top": -170,
+      "left": 410,
+      "attrs": { "value": "12" }
+    },
+    {
+      "type": "wokwi-gas-sensor",
+      "id": "gas",
+      "top": -45,
+      "left": 400,
+      "attrs": { "ppm": "250", "threshold": "2.4" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "noise_sim",
+      "top": 105,
+      "left": 420,
+      "attrs": { "value": "35" }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "solar",
+      "top": 250,
+      "left": 400,
+      "attrs": { "lux": "10000", "threshold": "2.5" }
+    },
+    {
+      "type": "wokwi-led-matrix",
+      "id": "matrix",
+      "top": 275,
+      "left": -250,
+      "attrs": {
+        "rows": "8",
+        "cols": "8",
+        "layout": "serpentine",
+        "brightness": "0.7",
+        "pixelShape": "circle"
+      }
+    },
+    {
+      "type": "wokwi-relay-module",
+      "id": "relay",
+      "top": 415,
+      "left": 110,
+      "attrs": { "transistor": "pnp" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "pm25_note",
+      "top": -215,
+      "left": 385,
+      "attrs": { "text": "PM2.5 simulator", "fontSize": "13", "color": "#6ee7b7" }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "solar_note",
+      "top": 215,
+      "left": 385,
+      "attrs": { "text": "Solar / sunlight", "fontSize": "13", "color": "#facc15" }
+    }
+  ],
+  "connections": [
+    ["esp32:D4", "dht22:SDA", "green", ["v0"]],
+    ["dht22:VCC", "esp32:3V3", "red", ["v0"]],
+    ["dht22:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["esp32:D21", "oled:SDA", "green", ["v0"]],
+    ["esp32:D22", "oled:SCL", "blue", ["v0"]],
+    ["oled:VCC", "esp32:3V3", "red", ["v0"]],
+    ["oled:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["esp32:D21", "mpu6050:SDA", "green", ["v0"]],
+    ["esp32:D22", "mpu6050:SCL", "blue", ["v0"]],
+    ["mpu6050:VCC", "esp32:3V3", "red", ["v0"]],
+    ["mpu6050:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["pir:OUT", "esp32:D27", "purple", ["v0"]],
+    ["pir:VCC", "esp32:3V3", "red", ["v0"]],
+    ["pir:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["pm25_sim:SIG", "esp32:D32", "cyan", ["v0"]],
+    ["pm25_sim:VCC", "esp32:3V3", "red", ["v0"]],
+    ["pm25_sim:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["gas:AO", "esp32:D34", "orange", ["v0"]],
+    ["gas:VCC", "esp32:3V3", "red", ["v0"]],
+    ["gas:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["noise_sim:SIG", "esp32:D35", "magenta", ["v0"]],
+    ["noise_sim:VCC", "esp32:3V3", "red", ["v0"]],
+    ["noise_sim:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["solar:AO", "esp32:D33", "yellow", ["v0"]],
+    ["solar:VCC", "esp32:3V3", "red", ["v0"]],
+    ["solar:GND", "esp32:GND.1", "black", ["v0"]],
+
+    ["matrix:DIN", "esp32:D5", "limegreen", ["v0"]],
+    ["matrix:VDD", "esp32:VIN", "red", ["v0"]],
+    ["matrix:VSS", "esp32:GND.1", "black", ["v0"]],
+
+    ["relay:IN", "esp32:D23", "orange", ["v0"]],
+    ["relay:VCC", "esp32:VIN", "red", ["v0"]],
+    ["relay:GND", "esp32:GND.1", "black", ["v0"]]
+  ],
+  "dependencies": {}
+}
